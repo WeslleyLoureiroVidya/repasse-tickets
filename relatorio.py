@@ -202,30 +202,45 @@ for analista in tickets_por_analista:
 
 total_geral = 0
 total_vencidos_geral = 0
+total_hoje_geral = 0
+total_alta_geral = 0
 total_urgentes_geral = 0
+
 analista_metrics = {}
 
 for analista, t_list in tickets_por_analista.items():
     t_count = len(t_list)
-    v_count = 0
-    u_count = 0
+    vencidos_count = 0
+    vencem_hoje_count = 0
+    alta_count = 0
+    urgente_count = 0
+
     for t in t_list:
         total_geral += 1
         due_dt = parse_date(t.get("slaSolutionDate"))
         if due_dt:
-            if (due_dt.date() - hoje.date()).days <= 0:
-                v_count += 1
+            delta_days = (due_dt.date() - hoje.date()).days
+            if delta_days < 0:
+                vencidos_count += 1
                 total_vencidos_geral += 1
-        
+            elif delta_days == 0:
+                vencem_hoje_count += 1
+                total_hoje_geral += 1
+
         urg_norm = normalize(t.get("urgency"))
-        if "urgent" in urg_norm or "alt" in urg_norm:
-            u_count += 1
+        if "urgent" in urg_norm:
+            urgente_count += 1
             total_urgentes_geral += 1
+        elif "alt" in urg_norm:
+            alta_count += 1
+            total_alta_geral += 1
 
     analista_metrics[analista] = {
         "total": t_count,
-        "vencidos": v_count,
-        "urgentes": u_count
+        "vencidos": vencidos_count,
+        "vencem_hoje": vencem_hoje_count,
+        "alta": alta_count,
+        "urgente": urgente_count
     }
 
 # ============================================================
@@ -249,14 +264,15 @@ body {{ margin: 0; padding: 0; background-color: #f4f6f8; font-family: Arial, sa
 .title {{ margin: 0; font-size: 26px; color: #1f2937; }}
 .subtitle {{ margin: 8px 0 0; font-size: 14px; color: #6b7280; }}
 .content {{ padding: 26px 32px 32px; }}
-.metrics-box {{ display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; }}
-.metric-card {{ background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px 20px; flex: 1; min-width: 180px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }}
-.metric-title {{ font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold; margin-bottom: 5px; }}
-.metric-value {{ font-size: 22px; font-weight: bold; color: #0f172a; }}
+.metrics-box {{ display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }}
+.metric-card {{ background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 22px; flex: 1; min-width: 180px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }}
+.metric-title {{ font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold; margin-bottom: 6px; }}
+.metric-value {{ font-size: 24px; font-weight: bold; color: #0f172a; }}
 .analyst-section {{ margin-bottom: 30px; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; background: #fafafa; }}
-.analyst-header {{ background: #f3f4f6; padding: 14px 20px; font-size: 15px; font-weight: bold; color: #1f2937; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }}
-.analyst-badge-container {{ display: flex; gap: 8px; font-size: 12px; font-weight: normal; }}
-.analyst-badge {{ background: #e2e8f0; color: #334155; padding: 3px 8px; border-radius: 12px; font-weight: bold; }}
+.analyst-header {{ background: #f3f4f6; padding: 16px 22px; border-bottom: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 12px; }}
+.analyst-title-name {{ font-size: 16px; font-weight: bold; color: #1f2937; }}
+.analyst-badge-container {{ display: flex; gap: 12px; font-size: 12px; font-weight: normal; flex-wrap: wrap; }}
+.analyst-badge {{ padding: 5px 12px; border-radius: 6px; font-weight: bold; white-space: nowrap; }}
 .table-wrapper {{ width: 100%; overflow-x: auto; }}
 table {{ width: 100%; border-collapse: collapse; font-size: 12px; background: #ffffff; }}
 th {{ background: #f8fafc; color: #6b7280; font-size: 11px; font-weight: bold; text-align: left; padding: 12px 10px; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }}
@@ -284,16 +300,24 @@ td {{ padding: 12px 10px; border-bottom: 1px solid #f0f1f3; vertical-align: midd
 
 <div class="metrics-box">
     <div class="metric-card">
-        <div class="metric-title">Total de Tickets</div>
+        <div class="metric-title">Total Geral</div>
         <div class="metric-value">{total_geral}</div>
     </div>
     <div class="metric-card">
-        <div class="metric-title">Vencidos / Vencem Hoje</div>
-        <div class="metric-value" style="color: #b42318;">{total_vencidos_geral}</div>
+        <div class="metric-title">Vencidos</div>
+        <div class="metric-value" style="color: #991b1b;">{total_vencidos_geral}</div>
     </div>
     <div class="metric-card">
-        <div class="metric-title">Urgentes / Alta Prioridade</div>
-        <div class="metric-value" style="color: #a15c00;">{total_urgentes_geral}</div>
+        <div class="metric-title">Vencem Hoje</div>
+        <div class="metric-value" style="color: #854d0e;">{total_hoje_geral}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-title">Prioridade Alta</div>
+        <div class="metric-value" style="color: #9a3412;">{total_alta_geral}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-title">Prioridade Urgente</div>
+        <div class="metric-value" style="color: #111827;">{total_urgentes_geral}</div>
     </div>
 </div>
 """
@@ -310,11 +334,13 @@ else:
         html_content += f"""
         <div class="analyst-section">
             <div class="analyst-header">
-                <span>👤 {esc(analista)}</span>
+                <div class="analyst-title-name">👤 {esc(analista)}</div>
                 <div class="analyst-badge-container">
-                    <span class="analyst-badge">Total: {m["total"]}</span>
-                    <span class="analyst-badge" style="background: #fee2e2; color: #991b1b;">Vencidos/Hoje: {m["vencidos"]}</span>
-                    <span class="analyst-badge" style="background: #fef3c7; color: #92400e;">Urgentes/Alta: {m["urgentes"]}</span>
+                    <span class="analyst-badge" style="background: #f1f5f9; color: #475569;">TOTAL: {m["total"]}</span>
+                    <span class="analyst-badge" style="background: #fee2e2; color: #991b1b;">VENCIDOS: {m["vencidos"]}</span>
+                    <span class="analyst-badge" style="background: #fef9c3; color: #854d0e;">VENCEM HOJE: {m["vencem_hoje"]}</span>
+                    <span class="analyst-badge" style="background: #ffedd5; color: #9a3412;">PRIORIDADE ALTA: {m["alta"]}</span>
+                    <span class="analyst-badge" style="background: #111827; color: #ffffff;">PRIORIDADE URGENTE: {m["urgente"]}</span>
                 </div>
             </div>
             <div class="table-wrapper">
