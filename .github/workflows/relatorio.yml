@@ -1,32 +1,36 @@
-name: Relatório Semanal Sprint e Dev
+name: Relatório Movidesk - Sprint & Desenvolvimento
 
 on:
   schedule:
-    # Roda toda quarta-feira às 08:00 no horário de Brasília (11:00 UTC)
-    - cron: '0 11 * * 3'
-  workflow_dispatch: # Permite disparar manualmente para testes
+    # Executa de segunda a sexta-feira às 10:30 UTC (07:30 BRT)
+    - cron: '30 10 * * 1-5'
+  
+  # Permite a execução manual pelo painel do GitHub Actions
+  workflow_dispatch:
 
 jobs:
-  enviar-email:
+  run-relatorio:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout do Repositório
+      - name: Baixar código do repositório
         uses: actions/checkout@v4
 
-      - name: Configurar Python
+      - name: Configurar ambiente Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
-      - name: Instalar Dependências
+      - name: Instalar dependências
         run: |
+          python -m pip install --upgrade pip
           pip install requests
 
-      - name: Executar Script
+      - name: Executar script de envio
         env:
           MOVIDESK_TOKEN: ${{ secrets.MOVIDESK_TOKEN }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
-        run: |
-          python relatorio.py
+        # Substitua 'seu_script.py' pelo nome real do arquivo Python contendo o seu código
+        run: python seu_script.py
