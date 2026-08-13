@@ -87,18 +87,6 @@ while True:
 
 print(f"[INFO] Total de tickets abertos/em andamento carregados: {len(tickets)}")
 
-if DEBUG:
-    print("[DEBUG] Amostra dos valores brutos de status/justification (até 20 tickets):")
-    for t in tickets[:20]:
-        print(
-            f"  id={t.get('id')} | status={t.get('status')!r} | "
-            f"justification={t.get('justification')!r} | slaSolutionDate={t.get('slaSolutionDate')!r}"
-        )
-    unique_status = sorted({t.get("status") for t in tickets if t.get("status")})
-    unique_just = sorted({t.get("justification") for t in tickets if t.get("justification")})
-    print(f"[DEBUG] Valores únicos de status encontrados: {unique_status}")
-    print(f"[DEBUG] Valores únicos de justification encontrados: {unique_just}")
-
 # ============================================================
 # PROCESSAMENTO E FILTRAGEM DOS TICKETS
 # ============================================================
@@ -151,7 +139,7 @@ print(f"[INFO] Total de tickets que bateram no filtro Sprint/Dev: "
 tickets_por_analista = dict(sorted(tickets_por_analista.items()))
 
 # ============================================================
-# FUNÇÕES AUXILIARES DE HTML
+# FUNÇÕES AUXILIARES E ORDENAÇÃO POR URGÊNCIA
 # ============================================================
 
 def esc(value):
@@ -175,6 +163,19 @@ def status_class(status):
     return "status-info"
 
 
+def urgency_priority(urgency):
+    val = normalize(urgency)
+    if "urgent" in val:
+        return 1
+    elif "alt" in val:
+        return 2
+    elif "media" in val:
+        return 3
+    elif "baix" in val or "low" in val:
+        return 4
+    return 5
+
+
 def urgency_badge(urgency):
     val = normalize(urgency)
     if "urgent" in val:
@@ -186,6 +187,46 @@ def urgency_badge(urgency):
     elif "baix" in val or "low" in val:
         return '<span class="urgency-low">BAIXA</span>'
     return f'<span class="urgency-normal">{esc(urgency or "Normal")}</span>'
+
+
+# Ordena os tickets de cada analista por Urgência (1º) e data de SLA (2º)
+for analista in tickets_por_analista:
+    tickets_por_analista[analista].sort(key=lambda t: (
+        urgency_priority(t.get("urgency")),
+        parse_date(t.get("slaSolutionDate")) or datetime.max
+    ))
+
+# ============================================================
+# CÁLCULO DE MÉTRICAS (Geral e por Analista)
+# ============================================================
+
+total_geral = 0
+total_vencidos_geral = 0
+total_urgentes_geral = 0
+analista_metrics = {}
+
+for analista, t_list in tickets_por_analista.items():
+    t_count = len(t_list)
+    v_count = 0
+    u_count = 0
+    for t in t_list:
+        total_geral += 1
+        due_dt = parse_date(t.get("slaSolutionDate"))
+        if due_dt:
+            if (due_dt.date() - hoje.date()).days <= 0:
+                v_count += 1
+                total_vencidos_geral += 1
+        
+        urg_norm = normalize(t.get("urgency"))
+        if "urgent" in urg_norm or "alt" in urg_norm:
+            u_count += 1
+            total_urgentes_geral += 1
+
+    analista_metrics[analista] = {
+        "total": t_count,
+        "vencidos": v_count,
+        "urgentes": u_count
+    }
 
 # ============================================================
 # MONTAGEM DO HTML E E-MAIL
@@ -208,8 +249,14 @@ body {{ margin: 0; padding: 0; background-color: #f4f6f8; font-family: Arial, sa
 .title {{ margin: 0; font-size: 26px; color: #1f2937; }}
 .subtitle {{ margin: 8px 0 0; font-size: 14px; color: #6b7280; }}
 .content {{ padding: 26px 32px 32px; }}
+.metrics-box {{ display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; }}
+.metric-card {{ background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px 20px; flex: 1; min-width: 180px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }}
+.metric-title {{ font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold; margin-bottom: 5px; }}
+.metric-value {{ font-size: 22px; font-weight: bold; color: #0f172a; }}
 .analyst-section {{ margin-bottom: 30px; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; background: #fafafa; }}
-.analyst-header {{ background: #f3f4f6; padding: 14px 20px; font-size: 16px; font-weight: bold; color: #1f2937; border-bottom: 1px solid #e5e7eb; }}
+.analyst-header {{ background: #f3f4f6; padding: 14px 20px; font-size: 15px; font-weight: bold; color: #1f2937; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }}
+.analyst-badge-container {{ display: flex; gap: 8px; font-size: 12px; font-weight: normal; }}
+.analyst-badge {{ background: #e2e8f0; color: #334155; padding: 3px 8px; border-radius: 12px; font-weight: bold; }}
 .table-wrapper {{ width: 100%; overflow-x: auto; }}
 table {{ width: 100%; border-collapse: collapse; font-size: 12px; background: #ffffff; }}
 th {{ background: #f8fafc; color: #6b7280; font-size: 11px; font-weight: bold; text-align: left; padding: 12px 10px; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }}
@@ -234,6 +281,21 @@ td {{ padding: 12px 10px; border-bottom: 1px solid #f0f1f3; vertical-align: midd
     <p class="subtitle">Data de geração: <strong>{data_atual_str}</strong> | Separado por analista</p>
 </div>
 <div class="content">
+
+<div class="metrics-box">
+    <div class="metric-card">
+        <div class="metric-title">Total de Tickets</div>
+        <div class="metric-value">{total_geral}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-title">Vencidos / Vencem Hoje</div>
+        <div class="metric-value" style="color: #b42318;">{total_vencidos_geral}</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-title">Urgentes / Alta Prioridade</div>
+        <div class="metric-value" style="color: #a15c00;">{total_urgentes_geral}</div>
+    </div>
+</div>
 """
 
 if not tickets_por_analista:
@@ -244,9 +306,17 @@ if not tickets_por_analista:
     """
 else:
     for analista, t_list in tickets_por_analista.items():
+        m = analista_metrics[analista]
         html_content += f"""
         <div class="analyst-section">
-            <div class="analyst-header">👤 {esc(analista)} ({len(t_list)} ticket(s))</div>
+            <div class="analyst-header">
+                <span>👤 {esc(analista)}</span>
+                <div class="analyst-badge-container">
+                    <span class="analyst-badge">Total: {m["total"]}</span>
+                    <span class="analyst-badge" style="background: #fee2e2; color: #991b1b;">Vencidos/Hoje: {m["vencidos"]}</span>
+                    <span class="analyst-badge" style="background: #fef3c7; color: #92400e;">Urgentes/Alta: {m["urgentes"]}</span>
+                </div>
+            </div>
             <div class="table-wrapper">
             <table>
             <thead>
@@ -278,10 +348,8 @@ else:
                 delta_days = (due_date_only - hoje_date_only).days
                 
                 if delta_days <= 0:
-                    # Vencido ou vence hoje -> Vermelho claro
                     row_style = 'style="background-color: #fde8e8;"'
                 elif delta_days in (1, 2):
-                    # Vence amanhã ou depois de amanhã -> Amarelo claro
                     row_style = 'style="background-color: #fef9c3;"'
 
             clients = t.get("clients", [])
@@ -298,7 +366,6 @@ else:
             urg_badge = urgency_badge(urgency_raw)
             status_css = status_class(status)
 
-            # Estilização colorida da justificativa em estilo badge/tag
             just_norm = normalize(justification)
             if justification != "-":
                 if "sprint" in just_norm:
