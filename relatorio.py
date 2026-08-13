@@ -298,6 +298,18 @@ else:
             urg_badge = urgency_badge(urgency_raw)
             status_css = status_class(status)
 
+            # Estilização colorida da justificativa em estilo badge/tag
+            just_norm = normalize(justification)
+            if justification != "-":
+                if "sprint" in just_norm:
+                    just_badge = f'<span style="background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block;">{esc(justification)}</span>'
+                elif "desenvolvimento" in just_norm:
+                    just_badge = f'<span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block;">{esc(justification)}</span>'
+                else:
+                    just_badge = f'<span style="background: #f1f5f9; color: #334155; padding: 4px 8px; border-radius: 4px; font-size: 11px; display: inline-block;">{esc(justification)}</span>'
+            else:
+                just_badge = '<span style="color: #9ca3af;">-</span>'
+
             html_content += f"""
             <tr {row_style}>
                 <td style="font-weight: bold; color: #4b5563;">{esc(t_id)}</td>
@@ -305,7 +317,7 @@ else:
                 <td><strong style="color: #1f2937;">{esc(organizacao)}</strong><br><span style="font-size: 11px; color: #6b7280;">{esc(solicitante)}</span></td>
                 <td style="max-width: 240px; line-height: 1.4;">{esc(t.get("subject") or "-")}</td>
                 <td><span class="status {status_css}">{esc(status)}</span></td>
-                <td style="max-width: 200px; color: #6b7280; line-height: 1.4;">{esc(justification)}</td>
+                <td style="max-width: 200px; line-height: 1.4;">{just_badge}</td>
                 <td style="white-space: nowrap;">{esc(due_formatted)}</td>
             </tr>
             """
