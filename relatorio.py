@@ -430,7 +430,7 @@ td {{
 <div class="header-card">
     <div class="eyebrow">VIDYA CODE • SUPORTE</div>
     <h1 class="title">Relatório: Sprint & Desenvolvimento</h1>
-    <p class="subtitle">Data de geração: <strong>{data_atual_str}</strong> | Organizado por Analista</p>
+    <p class="subtitle">Data de geração: <strong>{data_atual_str}</strong></p>
 </div>
 
 <div class="metrics-grid">
