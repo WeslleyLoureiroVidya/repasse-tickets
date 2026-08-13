@@ -36,9 +36,6 @@ if not EMAIL_RECIPIENTS:
 # ============================================================
 # NORMALIZAÇÃO DE TEXTO
 # ============================================================
-# Remove acentos, espaços extras e força minúsculo. Isso evita que
-# diferenças de acentuação/maiúsculas façam o "in" falhar silenciosamente,
-# que era a causa mais provável de nenhum ticket estar sendo encontrado.
 
 def normalize(text):
     if not text:
@@ -69,8 +66,6 @@ while True:
     try:
         response_tickets = requests.get(url_tickets, params=params_tickets, timeout=30)
         if not response_tickets.ok:
-            # Imprime o corpo da resposta: é aqui que a Movidesk explica
-            # exatamente qual parâmetro do $select/$expand é inválido.
             print(f"[ERRO] Status HTTP: {response_tickets.status_code}")
             print(f"[ERRO] Corpo da resposta da API: {response_tickets.text}")
             response_tickets.raise_for_status()
@@ -222,9 +217,6 @@ td {{ padding: 12px 10px; border-bottom: 1px solid #f0f1f3; vertical-align: midd
 .status {{ display: inline-block; padding: 5px 9px; border-radius: 20px; font-size: 10px; font-weight: bold; white-space: nowrap; }}
 .status-warning {{ background: #fff6df; color: #a15c00; }}
 .status-info {{ background: #edf4ff; color: #2457a6; }}
-.badge-tag {{ display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }}
-.badge-sprint {{ background: #e0f2fe; color: #0369a1; }}
-.badge-dev {{ background: #fee2e2; color: #991b1b; }}
 .urgency-urgent {{ background: #111827; color: #ffffff; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; }}
 .urgency-high {{ background: #fdecec; color: #b42318; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; }}
 .urgency-medium {{ background: #fff6df; color: #a15c00; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; }}
@@ -260,7 +252,6 @@ else:
             <thead>
             <tr>
                 <th>ID</th>
-                <th>TIPO</th>
                 <th>URGÊNCIA</th>
                 <th>ORGANIZAÇÃO / SOLICITANTE</th>
                 <th>ASSUNTO</th>
@@ -276,8 +267,22 @@ else:
             urgency_raw = t.get("urgency")
             status = t.get("status") or "-"
             justification = t.get("justification") or "-"
-            tipo_alerta = t.get("_tipo_alerta", "-")
             due_formatted = format_date(t.get("slaSolutionDate"))
+            
+            # Lógica de coloração da linha com base no SLA
+            row_style = ""
+            due_dt = parse_date(t.get("slaSolutionDate"))
+            if due_dt:
+                due_date_only = due_dt.date()
+                hoje_date_only = hoje.date()
+                delta_days = (due_date_only - hoje_date_only).days
+                
+                if delta_days <= 0:
+                    # Vencido ou vence hoje -> Vermelho claro
+                    row_style = 'style="background-color: #fde8e8;"'
+                elif delta_days in (1, 2):
+                    # Vence amanhã ou depois de amanhã -> Amarelo claro
+                    row_style = 'style="background-color: #fef9c3;"'
 
             clients = t.get("clients", [])
             organizacao = "-"
@@ -290,14 +295,12 @@ else:
                     if isinstance(org_obj, dict):
                         organizacao = org_obj.get("businessName") or org_obj.get("name") or "-"
 
-            badge_css = "badge-sprint" if "Sprint" in tipo_alerta else "badge-dev"
             urg_badge = urgency_badge(urgency_raw)
             status_css = status_class(status)
 
             html_content += f"""
-            <tr>
+            <tr {row_style}>
                 <td style="font-weight: bold; color: #4b5563;">{esc(t_id)}</td>
-                <td><span class="badge-tag {badge_css}">{esc(tipo_alerta)}</span></td>
                 <td>{urg_badge}</td>
                 <td><strong style="color: #1f2937;">{esc(organizacao)}</strong><br><span style="font-size: 11px; color: #6b7280;">{esc(solicitante)}</span></td>
                 <td style="max-width: 240px; line-height: 1.4;">{esc(t.get("subject") or "-")}</td>
