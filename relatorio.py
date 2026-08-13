@@ -1,8 +1,8 @@
 import os
 import html
+import unicodedata
 import requests
-import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -16,16 +16,10 @@ MOVIDESK_TOKEN = os.environ.get("MOVIDESK_TOKEN")
 EMAIL_USER = os.environ.get("EMAIL_USER")
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD")
 EMAIL_TO = os.environ.get("EMAIL_TO", "")
+# Se DEBUG=1, imprime nos logs do Action os valores brutos de status/justification
+DEBUG = os.environ.get("DEBUG", "0") == "1"
 
-EMAIL_RECIPIENTS = [
-    email.strip()
-    for email in EMAIL_TO.split(",")
-    if email.strip()
-]
-
-# ============================================================
-# VALIDAÇÃO DAS CONFIGURAÇÕES
-# ============================================================
+EMAIL_RECIPIENTS = [e.strip() for e in EMAIL_TO.split(",") if e.strip()]
 
 required_variables = {
     "MOVIDESK_TOKEN": MOVIDESK_TOKEN,
@@ -33,18 +27,26 @@ required_variables = {
     "EMAIL_PASSWORD": EMAIL_PASSWORD,
     "EMAIL_TO": EMAIL_TO,
 }
-
-missing_variables = [
-    name for name, value in required_variables.items() if not value
-]
-
+missing_variables = [n for n, v in required_variables.items() if not v]
 if missing_variables:
-    raise RuntimeError(
-        "Variáveis de ambiente não configuradas: " + ", ".join(missing_variables)
-    )
-
+    raise RuntimeError("Variáveis de ambiente não configuradas: " + ", ".join(missing_variables))
 if not EMAIL_RECIPIENTS:
     raise RuntimeError("EMAIL_TO não possui nenhum destinatário válido.")
+
+# ============================================================
+# NORMALIZAÇÃO DE TEXTO
+# ============================================================
+# Remove acentos, espaços extras e força minúsculo. Isso evita que
+# diferenças de acentuação/maiúsculas façam o "in" falhar silenciosamente,
+# que era a causa mais provável de nenhum ticket estar sendo encontrado.
+
+def normalize(text):
+    if not text:
+        return ""
+    text = str(text).strip().lower()
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(c for c in text if not unicodedata.combining(c))
+    return text
 
 # ============================================================
 # BUSCAR TICKETS ABERTOS / EM ANDAMENTO (Paginação)
@@ -62,27 +64,45 @@ while True:
         "$expand": "owner,clients($expand=organization)",
         "$top": str(top),
         "$skip": str(skip),
-        "$orderby": "id desc"
+        "$orderby": "id desc",
     }
     try:
         response_tickets = requests.get(url_tickets, params=params_tickets, timeout=30)
-        response_tickets.raise_for_status()
+        if not response_tickets.ok:
+            # Imprime o corpo da resposta: é aqui que a Movidesk explica
+            # exatamente qual parâmetro do $select/$expand é inválido.
+            print(f"[ERRO] Status HTTP: {response_tickets.status_code}")
+            print(f"[ERRO] Corpo da resposta da API: {response_tickets.text}")
+            response_tickets.raise_for_status()
         batch = response_tickets.json()
         if not isinstance(batch, list) or not batch:
             break
-        
-        # Filtra e ignora tickets resolvidos/fechados/cancelados
+
         for t in batch:
-            st = (t.get("status") or "").lower()
-            if not any(term in st for term in ["resol", "fech", "cancel"]):
+            st_norm = normalize(t.get("status"))
+            if not any(term in st_norm for term in ["resol", "fech", "cancel", "closed", "resolved", "cancelled"]):
                 tickets.append(t)
-                
+
         if len(batch) < top:
             break
         skip += top
     except Exception as e:
         print(f"Erro ao buscar tickets: {e}")
         break
+
+print(f"[INFO] Total de tickets abertos/em andamento carregados: {len(tickets)}")
+
+if DEBUG:
+    print("[DEBUG] Amostra dos valores brutos de status/justification (até 20 tickets):")
+    for t in tickets[:20]:
+        print(
+            f"  id={t.get('id')} | status={t.get('status')!r} | "
+            f"justification={t.get('justification')!r} | dueDate={t.get('dueDate')!r}"
+        )
+    unique_status = sorted({t.get("status") for t in tickets if t.get("status")})
+    unique_just = sorted({t.get("justification") for t in tickets if t.get("justification")})
+    print(f"[DEBUG] Valores únicos de status encontrados: {unique_status}")
+    print(f"[DEBUG] Valores únicos de justification encontrados: {unique_just}")
 
 # ============================================================
 # PROCESSAMENTO E FILTRAGEM DOS TICKETS
@@ -91,34 +111,33 @@ while True:
 hoje = datetime.now()
 tickets_por_analista = defaultdict(list)
 
+
 def parse_date(raw_date):
     if not raw_date:
         return None
     try:
         return datetime.fromisoformat(raw_date.replace("Z", "").split(".")[0])
-    except:
+    except Exception:
         return None
 
+
 for ticket in tickets:
-    status = (ticket.get("status") or "").lower()
-    justification = (ticket.get("justification") or "").lower()
-    due_date_raw = ticket.get("dueDate")
-    due_dt = parse_date(due_date_raw)
+    status_norm = normalize(ticket.get("status"))
+    justification_norm = normalize(ticket.get("justification"))
+    due_dt = parse_date(ticket.get("dueDate"))
 
-    # 1. Condição Sprint: Status Aguardando E Justificativa Sprint
-    match_sprint = "aguardando" in status and "sprint" in justification
+    match_sprint = "sprint" in status_norm or "sprint" in justification_norm
 
-    # 2. Condição Dev: Status Aguardando + Justificativa Equipe de Desenvolvimento + Vencido ou Próximo (<= 2 dias)
-    is_aguardando = "aguardando" in status
-    is_dev_just = "equipe de desenvolvimento" in justification
-    
+    is_aguardando = "aguardando" in status_norm or "aguardando" in justification_norm
+    is_dev_just = "desenvolvimento" in justification_norm or "desenvolvimento" in status_norm
+
     is_due_condition_met = False
     if due_dt:
         diff = due_dt - hoje
         if diff.total_seconds() <= 0 or (0 <= diff.days <= 2):
             is_due_condition_met = True
     else:
-        is_due_condition_met = True # Se não tiver data preenchida, inclui para análise
+        is_due_condition_met = True
 
     match_dev = is_aguardando and is_dev_just and is_due_condition_met
 
@@ -127,9 +146,12 @@ for ticket in tickets:
         analista_nome = "Não Atribuído"
         if isinstance(owner, dict):
             analista_nome = owner.get("businessName") or owner.get("name") or "Não Atribuído"
-        
+
         ticket["_tipo_alerta"] = "Aguardando Sprint" if match_sprint else "Dev (Próximo/Vencido)"
         tickets_por_analista[analista_nome].append(ticket)
+
+print(f"[INFO] Total de tickets que bateram no filtro Sprint/Dev: "
+      f"{sum(len(v) for v in tickets_por_analista.values())}")
 
 tickets_por_analista = dict(sorted(tickets_por_analista.items()))
 
@@ -137,28 +159,34 @@ tickets_por_analista = dict(sorted(tickets_por_analista.items()))
 # FUNÇÕES AUXILIARES DE HTML
 # ============================================================
 
-def esc(value): return html.escape(str(value)) if value is not None else ""
+def esc(value):
+    return html.escape(str(value)) if value is not None else ""
+
 
 def format_date(raw_date):
-    if not raw_date: return "-"
+    if not raw_date:
+        return "-"
     try:
         dt_obj = datetime.fromisoformat(raw_date.replace("Z", "").split(".")[0])
         return dt_obj.strftime("%d/%m/%Y %H:%M")
-    except:
+    except Exception:
         return raw_date
 
+
 def status_class(status):
-    val = (status or "").lower()
-    if "sprint" in val: return "status-warning"
+    val = normalize(status)
+    if "sprint" in val:
+        return "status-warning"
     return "status-info"
 
+
 def urgency_badge(urgency):
-    val = (urgency or "").lower().strip()
-    if "urgent" in val or "urgente" in val:
+    val = normalize(urgency)
+    if "urgent" in val:
         return '<span class="urgency-urgent">URGENTE</span>'
     elif "alt" in val:
         return '<span class="urgency-high">ALTA</span>'
-    elif "média" in val or "media" in val:
+    elif "media" in val:
         return '<span class="urgency-medium">MÉDIA</span>'
     elif "baix" in val or "low" in val:
         return '<span class="urgency-low">BAIXA</span>'
@@ -250,7 +278,7 @@ else:
             justification = t.get("justification") or "-"
             tipo_alerta = t.get("_tipo_alerta", "-")
             due_formatted = format_date(t.get("dueDate"))
-            
+
             clients = t.get("clients", [])
             organizacao = "-"
             solicitante = "-"
