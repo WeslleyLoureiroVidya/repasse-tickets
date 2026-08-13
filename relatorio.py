@@ -244,7 +244,7 @@ for analista, t_list in tickets_por_analista.items():
     }
 
 # ============================================================
-# MONTAGEM DO HTML E E-MAIL
+# MONTAGEM DO HTML E E-MAIL (Design Estilo Dashboard Moderno)
 # ============================================================
 
 data_atual_str = hoje.strftime("%d/%m/%Y")
@@ -256,75 +256,210 @@ html_content = f"""
 <meta charset="UTF-8">
 <title>Relatório de Tickets - Sprint & Desenvolvimento</title>
 <style>
-body {{ margin: 0; padding: 0; background-color: #f4f6f8; font-family: Arial, sans-serif; color: #202124; }}
-.wrapper {{ width: 100%; padding: 30px 0; }}
-.container {{ max-width: 1200px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 3px 14px rgba(0,0,0,0.07); }}
-.header {{ padding: 28px 32px; border-bottom: 1px solid #e8eaed; background: #ffffff; }}
-.eyebrow {{ font-size: 12px; font-weight: bold; letter-spacing: 1.2px; color: #6b7280; text-transform: uppercase; margin-bottom: 8px; }}
-.title {{ margin: 0; font-size: 26px; color: #1f2937; }}
-.subtitle {{ margin: 8px 0 0; font-size: 14px; color: #6b7280; }}
-.content {{ padding: 26px 32px 32px; }}
-.metrics-box {{ display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }}
-.metric-card {{ background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 22px; flex: 1; min-width: 180px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }}
-.metric-title {{ font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold; margin-bottom: 6px; }}
-.metric-value {{ font-size: 24px; font-weight: bold; color: #0f172a; }}
-.analyst-section {{ margin-bottom: 30px; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; background: #fafafa; }}
-.analyst-header {{ background: #f3f4f6; padding: 16px 22px; border-bottom: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 12px; }}
-.analyst-title-name {{ font-size: 16px; font-weight: bold; color: #1f2937; }}
-.analyst-badge-container {{ display: flex; gap: 12px; font-size: 12px; font-weight: normal; flex-wrap: wrap; }}
-.analyst-badge {{ padding: 5px 12px; border-radius: 6px; font-weight: bold; white-space: nowrap; }}
-.table-wrapper {{ width: 100%; overflow-x: auto; }}
-table {{ width: 100%; border-collapse: collapse; font-size: 12px; background: #ffffff; }}
-th {{ background: #f8fafc; color: #6b7280; font-size: 11px; font-weight: bold; text-align: left; padding: 12px 10px; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }}
-td {{ padding: 12px 10px; border-bottom: 1px solid #f0f1f3; vertical-align: middle; color: #374151; }}
-.status {{ display: inline-block; padding: 5px 9px; border-radius: 20px; font-size: 10px; font-weight: bold; white-space: nowrap; }}
-.status-warning {{ background: #fff6df; color: #a15c00; }}
-.status-info {{ background: #edf4ff; color: #2457a6; }}
-.urgency-urgent {{ background: #111827; color: #ffffff; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; }}
-.urgency-high {{ background: #fdecec; color: #b42318; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; }}
-.urgency-medium {{ background: #fff6df; color: #a15c00; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; }}
-.urgency-low {{ background: #e9f7ef; color: #18794e; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; }}
-.urgency-normal {{ color: #4b5563; font-size: 11px; }}
-.footer {{ padding: 18px 32px; border-top: 1px solid #e5e7eb; background: #fafafa; font-size: 11px; color: #9ca3af; text-align: center; }}
+body {{
+    margin: 0;
+    padding: 0;
+    background-color: #f0f3f8;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #1e293b;
+}}
+.wrapper {{
+    width: 100%;
+    padding: 40px 0;
+}}
+.container {{
+    max-width: 1100px;
+    margin: 0 auto;
+    background: #f8fafc;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+    padding: 30px;
+}}
+.header-card {{
+    background: linear-gradient(135deg, #0ea5e9, #2563eb);
+    color: #ffffff;
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
+}}
+.eyebrow {{
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    opacity: 0.85;
+    margin-bottom: 8px;
+}}
+.title {{
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+}}
+.subtitle {{
+    margin: 8px 0 0;
+    font-size: 14px;
+    opacity: 0.9;
+}}
+.metrics-grid {{
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}}
+.metric-card {{
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 20px;
+    flex: 1;
+    min-width: 180px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    border-top: 4px solid #cbd5e1;
+}}
+.metric-card.total {{ border-top-color: #3b82f6; }}
+.metric-card.vencidos {{ border-top-color: #ef4444; }}
+.metric-card.hoje {{ border-top-color: #f59e0b; }}
+.metric-card.alta {{ border-top-color: #f97316; }}
+.metric-card.urgente {{ border-top-color: #0f172a; }}
+
+.metric-title {{
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #64748b;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}}
+.metric-value {{
+    font-size: 26px;
+    font-weight: 700;
+    color: #0f172a;
+}}
+.analyst-section {{
+    background: #ffffff;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+}}
+.analyst-header {{
+    background: #f8fafc;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}}
+.analyst-title-name {{
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+}}
+.analyst-badge-container {{
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}}
+.analyst-badge {{
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 11px;
+}}
+.table-wrapper {{
+    width: 100%;
+    overflow-x: auto;
+}}
+table {{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    background: #ffffff;
+}}
+th {{
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: left;
+    padding: 14px 12px;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}}
+td {{
+    padding: 14px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+    color: #334155;
+}}
+.status {{
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+}}
+.status-warning {{ background: #fef3c7; color: #b45309; }}
+.status-info {{ background: #eff6ff; color: #1d4ed8; }}
+
+.urgency-urgent {{ background: #0f172a; color: #ffffff; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 10px; }}
+.urgency-high {{ background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 10px; }}
+.urgency-medium {{ background: #fef3c7; color: #b45309; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 10px; }}
+.urgency-low {{ background: #ecfdf5; color: #047857; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 10px; }}
+.urgency-normal {{ color: #475569; font-size: 11px; font-weight: 600; }}
+
+.footer {{
+    padding: 20px;
+    text-align: center;
+    font-size: 12px;
+    color: #64748b;
+    background: transparent;
+    font-weight: 500;
+}}
 </style>
 </head>
 <body>
 <div class="wrapper">
 <div class="container">
-<div class="header">
-    <div class="eyebrow">VIDYA CODE • SUPORTE</div>
-    <h1 class="title">Relatório: Sprint & Desenvolvimento</h1>
-    <p class="subtitle">Data de geração: <strong>{data_atual_str}</strong> | Separado por analista</p>
-</div>
-<div class="content">
 
-<div class="metrics-box">
-    <div class="metric-card">
+<div class="header-card">
+    <div class="eyebrow">VIDYA CODE • SUPORTE & ENGENHARIA</div>
+    <h1 class="title">Relatório: Sprint & Desenvolvimento</h1>
+    <p class="subtitle">Data de geração: <strong>{data_atual_str}</strong> | Organizado por Analista</p>
+</div>
+
+<div class="metrics-grid">
+    <div class="metric-card total">
         <div class="metric-title">Total Geral</div>
         <div class="metric-value">{total_geral}</div>
     </div>
-    <div class="metric-card">
+    <div class="metric-card vencidos">
         <div class="metric-title">Vencidos</div>
-        <div class="metric-value" style="color: #991b1b;">{total_vencidos_geral}</div>
+        <div class="metric-value" style="color: #ef4444;">{total_vencidos_geral}</div>
     </div>
-    <div class="metric-card">
+    <div class="metric-card hoje">
         <div class="metric-title">Vencem Hoje</div>
-        <div class="metric-value" style="color: #854d0e;">{total_hoje_geral}</div>
+        <div class="metric-value" style="color: #f59e0b;">{total_hoje_geral}</div>
     </div>
-    <div class="metric-card">
+    <div class="metric-card alta">
         <div class="metric-title">Prioridade Alta</div>
-        <div class="metric-value" style="color: #9a3412;">{total_alta_geral}</div>
+        <div class="metric-value" style="color: #f97316;">{total_alta_geral}</div>
     </div>
-    <div class="metric-card">
+    <div class="metric-card urgente">
         <div class="metric-title">Prioridade Urgente</div>
-        <div class="metric-value" style="color: #111827;">{total_urgentes_geral}</div>
+        <div class="metric-value" style="color: #0f172a;">{total_urgentes_geral}</div>
     </div>
 </div>
 """
 
 if not tickets_por_analista:
     html_content += """
-    <div style="text-align: center; padding: 40px; color: #6b7280; font-size: 14px;">
+    <div style="background: #ffffff; border-radius: 16px; text-align: center; padding: 50px; color: #64748b; font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
         Nenhum ticket encontrado nos critérios de "Sprint" ou "Desenvolvimento (Próximo/Vencido)".
     </div>
     """
@@ -336,11 +471,11 @@ else:
             <div class="analyst-header">
                 <div class="analyst-title-name">👤 {esc(analista)}</div>
                 <div class="analyst-badge-container">
-                    <span class="analyst-badge" style="background: #f1f5f9; color: #475569;">TOTAL: {m["total"]}</span>
+                    <span class="analyst-badge" style="background: #f1f5f9; color: #334155;">TOTAL: {m["total"]}</span>
                     <span class="analyst-badge" style="background: #fee2e2; color: #991b1b;">VENCIDOS: {m["vencidos"]}</span>
-                    <span class="analyst-badge" style="background: #fef9c3; color: #854d0e;">VENCEM HOJE: {m["vencem_hoje"]}</span>
+                    <span class="analyst-badge" style="background: #fef3c7; color: #b45309;">VENCEM HOJE: {m["vencem_hoje"]}</span>
                     <span class="analyst-badge" style="background: #ffedd5; color: #9a3412;">PRIORIDADE ALTA: {m["alta"]}</span>
-                    <span class="analyst-badge" style="background: #111827; color: #ffffff;">PRIORIDADE URGENTE: {m["urgente"]}</span>
+                    <span class="analyst-badge" style="background: #0f172a; color: #ffffff;">PRIORIDADE URGENTE: {m["urgente"]}</span>
                 </div>
             </div>
             <div class="table-wrapper">
@@ -348,12 +483,12 @@ else:
             <thead>
             <tr>
                 <th>ID</th>
-                <th>URGÊNCIA</th>
-                <th>ORGANIZAÇÃO / SOLICITANTE</th>
-                <th>ASSUNTO</th>
-                <th>STATUS</th>
-                <th>JUSTIFICATIVA</th>
-                <th>VENCIMENTO (SLA)</th>
+                <th>Urgência</th>
+                <th>Organização / Solicitante</th>
+                <th>Assunto</th>
+                <th>Status</th>
+                <th>Justificativa</th>
+                <th>Vencimento (SLA)</th>
             </tr>
             </thead>
             <tbody>
@@ -365,7 +500,6 @@ else:
             justification = t.get("justification") or "-"
             due_formatted = format_date(t.get("slaSolutionDate"))
             
-            # Lógica de coloração da linha com base no SLA
             row_style = ""
             due_dt = parse_date(t.get("slaSolutionDate"))
             if due_dt:
@@ -374,9 +508,9 @@ else:
                 delta_days = (due_date_only - hoje_date_only).days
                 
                 if delta_days <= 0:
-                    row_style = 'style="background-color: #fde8e8;"'
+                    row_style = 'style="background-color: #fff1f2;"'
                 elif delta_days in (1, 2):
-                    row_style = 'style="background-color: #fef9c3;"'
+                    row_style = 'style="background-color: #fefce8;"'
 
             clients = t.get("clients", [])
             organizacao = "-"
@@ -395,23 +529,23 @@ else:
             just_norm = normalize(justification)
             if justification != "-":
                 if "sprint" in just_norm:
-                    just_badge = f'<span style="background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block;">{esc(justification)}</span>'
+                    just_badge = f'<span style="background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-block;">{esc(justification)}</span>'
                 elif "desenvolvimento" in just_norm:
-                    just_badge = f'<span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block;">{esc(justification)}</span>'
+                    just_badge = f'<span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-block;">{esc(justification)}</span>'
                 else:
-                    just_badge = f'<span style="background: #f1f5f9; color: #334155; padding: 4px 8px; border-radius: 4px; font-size: 11px; display: inline-block;">{esc(justification)}</span>'
+                    just_badge = f'<span style="background: #f1f5f9; color: #334155; padding: 4px 8px; border-radius: 6px; font-size: 11px; display: inline-block;">{esc(justification)}</span>'
             else:
-                just_badge = '<span style="color: #9ca3af;">-</span>'
+                just_badge = '<span style="color: #94a3b8;">-</span>'
 
             html_content += f"""
             <tr {row_style}>
-                <td style="font-weight: bold; color: #4b5563;">{esc(t_id)}</td>
+                <td style="font-weight: 700; color: #475569;">{esc(t_id)}</td>
                 <td>{urg_badge}</td>
-                <td><strong style="color: #1f2937;">{esc(organizacao)}</strong><br><span style="font-size: 11px; color: #6b7280;">{esc(solicitante)}</span></td>
-                <td style="max-width: 240px; line-height: 1.4;">{esc(t.get("subject") or "-")}</td>
+                <td><strong style="color: #0f172a;">{esc(organizacao)}</strong><br><span style="font-size: 11px; color: #64748b;">{esc(solicitante)}</span></td>
+                <td style="max-width: 240px; line-height: 1.4; color: #1e293b;">{esc(t.get("subject") or "-")}</td>
                 <td><span class="status {status_css}">{esc(status)}</span></td>
                 <td style="max-width: 200px; line-height: 1.4;">{just_badge}</td>
-                <td style="white-space: nowrap;">{esc(due_formatted)}</td>
+                <td style="white-space: nowrap; font-weight: 500;">{esc(due_formatted)}</td>
             </tr>
             """
         html_content += """
@@ -422,7 +556,6 @@ else:
         """
 
 html_content += """
-</div>
 <div class="footer">
     Relatório automático • Movidesk • Vidya Code
 </div>
