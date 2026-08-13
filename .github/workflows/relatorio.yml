@@ -33,4 +33,4 @@ jobs:
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
         # Substitua 'seu_script.py' pelo nome real do arquivo Python contendo o seu código
-        run: python seu_script.py
+        run: python relatorio.py
