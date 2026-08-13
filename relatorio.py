@@ -60,7 +60,7 @@ top = 500
 while True:
     params_tickets = {
         "token": MOVIDESK_TOKEN,
-        "$select": "id,subject,status,justification,dueDate,owner,urgency,clients",
+        "$select": "id,subject,status,justification,slaSolutionDate,owner,urgency,clients",
         "$expand": "owner,clients($expand=organization)",
         "$top": str(top),
         "$skip": str(skip),
@@ -97,7 +97,7 @@ if DEBUG:
     for t in tickets[:20]:
         print(
             f"  id={t.get('id')} | status={t.get('status')!r} | "
-            f"justification={t.get('justification')!r} | dueDate={t.get('dueDate')!r}"
+            f"justification={t.get('justification')!r} | slaSolutionDate={t.get('slaSolutionDate')!r}"
         )
     unique_status = sorted({t.get("status") for t in tickets if t.get("status")})
     unique_just = sorted({t.get("justification") for t in tickets if t.get("justification")})
@@ -124,7 +124,7 @@ def parse_date(raw_date):
 for ticket in tickets:
     status_norm = normalize(ticket.get("status"))
     justification_norm = normalize(ticket.get("justification"))
-    due_dt = parse_date(ticket.get("dueDate"))
+    due_dt = parse_date(ticket.get("slaSolutionDate"))
 
     match_sprint = "sprint" in status_norm or "sprint" in justification_norm
 
@@ -277,7 +277,7 @@ else:
             status = t.get("status") or "-"
             justification = t.get("justification") or "-"
             tipo_alerta = t.get("_tipo_alerta", "-")
-            due_formatted = format_date(t.get("dueDate"))
+            due_formatted = format_date(t.get("slaSolutionDate"))
 
             clients = t.get("clients", [])
             organizacao = "-"
