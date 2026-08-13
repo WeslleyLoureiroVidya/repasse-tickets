@@ -254,7 +254,7 @@ html_content = f"""
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Relatório de Tickets - Sprint & Desenvolvimento</title>
+<title>Relatório de Tickets - Aguardando Sprint/Desenvolvimento</title>
 <style>
 body {{
     margin: 0;
