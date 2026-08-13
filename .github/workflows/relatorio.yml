@@ -1,0 +1,32 @@
+name: Relatório Semanal Sprint e Dev
+
+on:
+  schedule:
+    # Roda toda quarta-feira às 08:00 no horário de Brasília (11:00 UTC)
+    - cron: '0 11 * * 3'
+  workflow_dispatch: # Permite disparar manualmente para testes
+
+jobs:
+  enviar-email:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Instalar Dependências
+        run: |
+          pip install requests
+
+      - name: Executar Script
+        env:
+          MOVIDESK_TOKEN: ${{ secrets.MOVIDESK_TOKEN }}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: |
+          python relatorio.py
