@@ -27,7 +27,11 @@ url_tickets = "https://api.movidesk.com/public/v1/tickets"
 params = {
     "token": MOVIDESK_TOKEN,
     "$filter": f"createdDate ge {data_filtro}",
-    "$select": "subject,service,category",
+    # OBS: a API do Movidesk não tem uma propriedade "service" no Ticket.
+    # O nome correto é "serviceFull" (array com a hierarquia do serviço,
+    # ex: ["ETL", "Extractor development"]) ou serviceFirstLevel/
+    # serviceSecondLevel/serviceThirdLevel.
+    "$select": "subject,serviceFull,category",
     "$top": "1000" # Importante: limitar o top para não estourar
 }
 
@@ -55,9 +59,16 @@ def limpar_texto(texto):
     texto = re.sub(r'[^a-z0-9\s]', '', texto)
     return texto.split()
 
+def nome_servico(service_full):
+    # serviceFull é um array com a hierarquia, ex: ["ETL", "Extractor development"]
+    # Usamos o último item, que é o serviço mais específico selecionado no ticket.
+    if service_full and isinstance(service_full, list) and len(service_full) > 0:
+        return service_full[-1]
+    return "Sem Serviço"
+
 for t in tickets:
     cat = t.get("category") or "Sem Categoria"
-    svc = t.get("service") or "Sem Serviço"
+    svc = nome_servico(t.get("serviceFull"))
     sub = t.get("subject", "")
 
     categorias[cat] += 1
